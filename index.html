@@ -1,0 +1,1160 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Hand Tracker | Shivam Kumar</title>
+
+<style>
+:root {
+    --bg: #080d19;
+    --panel: #111a2b;
+    --panel2: #172238;
+    --text: #edf4ff;
+    --muted: #91a1bd;
+    --accent: #50e3c2;
+    --blue: #60a5fa;
+    --border: rgba(255,255,255,.09);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, Arial, sans-serif;
+    min-height: 100vh;
+}
+
+header {
+    padding: 22px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: rgba(17,26,43,.85);
+}
+
+.logo {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+}
+
+.logo span {
+    color: var(--accent);
+}
+
+.header-tag {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.container {
+    max-width: 1450px;
+    margin: auto;
+    padding: 28px 4%;
+}
+
+.intro {
+    margin-bottom: 25px;
+}
+
+.intro h1 {
+    font-size: clamp(27px, 4vw, 42px);
+    margin-bottom: 9px;
+}
+
+.intro h1 span {
+    color: var(--accent);
+}
+
+.intro p {
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(270px, .8fr);
+    gap: 20px;
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 17px;
+    padding: 18px;
+}
+
+.panel-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.panel-heading h2 {
+    font-size: 17px;
+}
+
+.status {
+    font-size: 11px;
+    padding: 7px 11px;
+    border-radius: 30px;
+    background: rgba(255,255,255,.08);
+    color: var(--muted);
+}
+
+.status.active {
+    color: var(--accent);
+    background: rgba(80,227,194,.12);
+}
+
+.camera-area {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: #030712;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+}
+
+.camera-area video,
+.camera-area canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    transform: scaleX(-1);
+}
+
+#video {
+    z-index: 1;
+}
+
+#trackingCanvas {
+    z-index: 2;
+    pointer-events: none;
+}
+
+#writingCanvas {
+    z-index: 3;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.camera-message {
+    position: absolute;
+    z-index: 4;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    color: var(--muted);
+    background: rgba(3,7,18,.5);
+    pointer-events: none;
+    line-height: 1.6;
+}
+
+.camera-message.hidden {
+    display: none;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+button {
+    border: none;
+    border-radius: 9px;
+    padding: 11px 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .2s;
+    color: #07131c;
+    background: var(--accent);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+}
+
+button.secondary {
+    background: var(--panel2);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+button.danger {
+    background: #ef4444;
+    color: white;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 17px;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.metric {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    padding: 14px;
+}
+
+.metric small {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 9px;
+}
+
+.metric strong {
+    font-size: 22px;
+}
+
+.metric .unit {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.info-list {
+    list-style: none;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.9;
+}
+
+.info-list li::before {
+    content: "✦";
+    color: var(--accent);
+    margin-right: 8px;
+}
+
+.tool-section {
+    margin-top: 20px;
+}
+
+.tool-section h3 {
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.tool-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tool-row label {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+input[type="color"] {
+    width: 38px;
+    height: 35px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+input[type="range"] {
+    accent-color: var(--accent);
+    max-width: 140px;
+}
+
+.mode-card {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    padding: 13px;
+    margin-bottom: 10px;
+}
+
+.mode-card strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.mode-card p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.mode-card.active {
+    border-color: var(--accent);
+}
+
+.mode-label {
+    color: var(--accent);
+    font-size: 10px;
+    margin-top: 8px;
+}
+
+.tip {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+    margin-top: 12px;
+}
+
+.about {
+    margin-top: 30px;
+    padding: 28px;
+    border-radius: 17px;
+    background: linear-gradient(130deg, #14233c, #101b2d);
+    border: 1px solid rgba(80,227,194,.2);
+}
+
+.about h2 {
+    font-size: 23px;
+    margin-bottom: 15px;
+}
+
+.about h2 span {
+    color: var(--accent);
+}
+
+.about-content {
+    display: flex;
+    gap: 22px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #50e3c2, #3b82f6);
+    color: #07131c;
+    display: grid;
+    place-items: center;
+    font-size: 26px;
+    font-weight: 900;
+}
+
+.about-text {
+    flex: 1;
+    min-width: 220px;
+}
+
+.about-text h3 {
+    font-size: 20px;
+    margin-bottom: 6px;
+}
+
+.about-text p {
+    color: var(--muted);
+    line-height: 1.8;
+    font-size: 13px;
+}
+
+.tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.tag {
+    font-size: 11px;
+    padding: 7px 10px;
+    border-radius: 20px;
+    background: rgba(80,227,194,.1);
+    color: var(--accent);
+    border: 1px solid rgba(80,227,194,.15);
+}
+
+footer {
+    text-align: center;
+    padding: 25px 10px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+#message {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 10px;
+}
+
+@media(max-width: 850px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media(max-width: 500px) {
+    header {
+        padding: 18px 5%;
+    }
+
+    .container {
+        padding: 22px 4%;
+    }
+
+    .camera-area {
+        aspect-ratio: 4 / 3;
+    }
+
+    .panel {
+        padding: 13px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">NEURAL<span>TRACK</span></div>
+    <div class="header-tag">COMPUTER VISION · HAND TRACKING</div>
+</header>
+
+<main class="container">
+
+    <section class="intro">
+        <h1>Hand <span>Motion</span> Tracker</h1>
+        <p>
+            Real-time hand detection, 3D landmark visualisation,
+            motion tracking and interactive air writing.
+        </p>
+    </section>
+
+    <section class="dashboard">
+
+        <div class="panel">
+            <div class="panel-heading">
+                <h2>Live Camera View</h2>
+                <span class="status" id="cameraStatus">Camera Offline</span>
+            </div>
+
+            <div class="camera-area" id="cameraArea">
+                <video id="video" autoplay muted playsinline></video>
+                <canvas id="trackingCanvas"></canvas>
+                <canvas id="writingCanvas"></canvas>
+
+                <div class="camera-message" id="cameraMessage">
+                    Click Start Camera to begin hand tracking.
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn">Start Camera</button>
+                <button class="secondary" id="stopBtn" disabled>Stop Camera</button>
+                <button class="secondary" id="clearBtn">Clear Writing</button>
+            </div>
+
+            <div id="message">
+                Camera access requires permission. Use localhost or HTTPS.
+            </div>
+
+            <div class="tool-section">
+                <h3>Writing Tools</h3>
+
+                <div class="tool-row">
+                    <label for="penColor">Pen colour</label>
+                    <input type="color" id="penColor" value="#50e3c2">
+
+                    <label for="penSize">Thickness</label>
+                    <input type="range" id="penSize" min="2" max="20" value="5">
+                    <span id="sizeValue" class="unit">5 px</span>
+                </div>
+
+                <p class="tip">
+                    Both writing methods are enabled. Use your mouse or touchscreen
+                    to draw, or pinch your thumb and index finger together to write
+                    using your hand in front of the camera.
+                </p>
+            </div>
+        </div>
+
+        <aside class="side-panel">
+
+            <div class="panel">
+                <div class="panel-heading">
+                    <h2>Tracking Metrics</h2>
+                    <span class="status" id="trackingStatus">Waiting</span>
+                </div>
+
+                <div class="metric-grid">
+                    <div class="metric">
+                        <small>Hands Detected</small>
+                        <strong id="handCount">0</strong>
+                    </div>
+
+                    <div class="metric">
+                        <small>FPS</small>
+                        <strong id="fps">0</strong>
+                    </div>
+
+                    <div class="metric">
+                        <small>Movement Speed</small>
+                        <strong id="speed">0</strong>
+                        <span class="unit">px/frame</span>
+                    </div>
+
+                    <div class="metric">
+                        <small>Finger Status</small>
+                        <strong id="fingerCount">0</strong>
+                        <span class="unit">extended</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 style="font-size:17px;margin-bottom:14px;">Writing Modes</h2>
+
+                <div class="mode-card active">
+                    <strong>✦ Air Writing</strong>
+                    <p>
+                        Pinch your thumb and index finger together.
+                        Move your index finger to write on the screen.
+                    </p>
+                    <div class="mode-label">ENABLED</div>
+                </div>
+
+                <div class="mode-card active">
+                    <strong>✦ Mouse / Touch Writing</strong>
+                    <p>
+                        Draw directly on the camera area using your
+                        mouse, finger or touchscreen.
+                    </p>
+                    <div class="mode-label">ENABLED</div>
+                </div>
+
+                <p class="tip">
+                    Tip: Release the pinch to stop drawing.
+                    You can use the Clear Writing button to erase your work.
+                </p>
+            </div>
+
+            <div class="panel">
+                <h2 style="font-size:17px;margin-bottom:12px;">Hand Information</h2>
+                <ul class="info-list">
+                    <li>21 landmarks per hand</li>
+                    <li>Up to two hands detected</li>
+                    <li>Finger extension detection</li>
+                    <li>Palm centre tracking</li>
+                    <li>Movement trail visualisation</li>
+                    <li>Pinch-based air writing</li>
+                </ul>
+            </div>
+
+        </aside>
+    </section>
+
+    <section class="about">
+        <h2>About <span>Me</span></h2>
+
+        <div class="about-content">
+            <div class="avatar">SK</div>
+
+            <div class="about-text">
+                <h3>Shivam Kumar</h3>
+                <p>
+                    First-Year BS Economics and Statistical Sciences Student<br>
+                    Indian Institute of Science Education and Research (IISER), Tirupati
+                </p>
+
+                <p style="margin-top:8px;">
+                    Interested in exploring technology, research and
+                    computational methods to solve real-world problems.
+                </p>
+
+                <div class="tags">
+                    <span class="tag">Data Science</span>
+                    <span class="tag">Python</span>
+                    <span class="tag">Artificial Intelligence</span>
+                    <span class="tag">Machine Learning</span>
+                    <span class="tag">Computer Vision</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    Designed and developed by Shivam Kumar · Hand Tracking Project
+</footer>
+
+<script type="module">
+import {
+    FilesetResolver,
+    HandLandmarker
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+const video = document.getElementById("video");
+const trackingCanvas = document.getElementById("trackingCanvas");
+const writingCanvas = document.getElementById("writingCanvas");
+
+const ctx = trackingCanvas.getContext("2d");
+const wctx = writingCanvas.getContext("2d");
+
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const clearBtn = document.getElementById("clearBtn");
+
+const cameraStatus = document.getElementById("cameraStatus");
+const trackingStatus = document.getElementById("trackingStatus");
+const cameraMessage = document.getElementById("cameraMessage");
+const message = document.getElementById("message");
+
+const handCountEl = document.getElementById("handCount");
+const fpsEl = document.getElementById("fps");
+const speedEl = document.getElementById("speed");
+const fingerCountEl = document.getElementById("fingerCount");
+
+const penColor = document.getElementById("penColor");
+const penSize = document.getElementById("penSize");
+const sizeValue = document.getElementById("sizeValue");
+
+let handLandmarker = null;
+let stream = null;
+let running = false;
+let animationId = null;
+let lastVideoTime = -1;
+
+let lastFrameTime = performance.now();
+let fps = 0;
+
+let previousPalm = null;
+let movementSpeed = 0;
+
+let pointerDrawing = false;
+let airDrawing = false;
+let lastAirPoint = null;
+
+let previousPinch = false;
+let lastPointerPoint = null;
+
+const motionTrail = [];
+
+const CONNECTIONS = [
+    [0,1],[1,2],[2,3],[3,4],
+    [0,5],[5,6],[6,7],[7,8],
+    [5,9],[9,10],[10,11],[11,12],
+    [9,13],[13,14],[14,15],[15,16],
+    [13,17],[17,18],[18,19],[19,20],
+    [0,17]
+];
+
+function resizeCanvases() {
+    const rect = document.getElementById("cameraArea").getBoundingClientRect();
+
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+
+    for (const canvas of [trackingCanvas, writingCanvas]) {
+        if (canvas.width !== width || canvas.height !== height) {
+            const oldWriting = canvas === writingCanvas
+                ? document.createElement("canvas")
+                : null;
+
+            if (oldWriting) {
+                oldWriting.width = canvas.width;
+                oldWriting.height = canvas.height;
+                oldWriting.getContext("2d").drawImage(canvas, 0, 0);
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            if (oldWriting) {
+                wctx.drawImage(
+                    oldWriting,
+                    0, 0,
+                    oldWriting.width,
+                    oldWriting.height,
+                    0, 0,
+                    width,
+                    height
+                );
+            }
+        }
+    }
+}
+
+window.addEventListener("resize", resizeCanvases);
+
+function setMessage(text) {
+    message.textContent = text;
+}
+
+function setStatus(element, text, active) {
+    element.textContent = text;
+    element.classList.toggle("active", active);
+}
+
+function getCanvasPoint(event) {
+    const rect = writingCanvas.getBoundingClientRect();
+
+    // The canvas is mirrored to match the mirrored camera preview.
+    const localX = event.clientX - rect.left;
+    const localY = event.clientY - rect.top;
+
+    return {
+        x: writingCanvas.width - localX * writingCanvas.width / rect.width,
+        y: localY * writingCanvas.height / rect.height
+    };
+}
+
+function drawLine(context, from, to, color, width) {
+    context.beginPath();
+    context.moveTo(from.x, from.y);
+    context.lineTo(to.x, to.y);
+    context.strokeStyle = color;
+    context.lineWidth = width;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.stroke();
+}
+
+function beginPointerDrawing(event) {
+    if (!running) return;
+
+    event.preventDefault();
+    pointerDrawing = true;
+
+    const point = getCanvasPoint(event);
+    lastPointerPoint = point;
+
+    try {
+        writingCanvas.setPointerCapture(event.pointerId);
+    } catch (_) {}
+}
+
+function continuePointerDrawing(event) {
+    if (!pointerDrawing) return;
+
+    event.preventDefault();
+
+    const point = getCanvasPoint(event);
+
+    if (lastPointerPoint) {
+        drawLine(
+            wctx,
+            lastPointerPoint,
+            point,
+            penColor.value,
+            Number(penSize.value)
+        );
+    }
+
+    lastPointerPoint = point;
+}
+
+function endPointerDrawing() {
+    pointerDrawing = false;
+    lastPointerPoint = null;
+}
+
+writingCanvas.addEventListener("pointerdown", beginPointerDrawing);
+writingCanvas.addEventListener("pointermove", continuePointerDrawing);
+writingCanvas.addEventListener("pointerup", endPointerDrawing);
+writingCanvas.addEventListener("pointercancel", endPointerDrawing);
+writingCanvas.addEventListener("lostpointercapture", endPointerDrawing);
+
+penSize.addEventListener("input", () => {
+    sizeValue.textContent = penSize.value + " px";
+});
+
+clearBtn.addEventListener("click", () => {
+    wctx.clearRect(0, 0, writingCanvas.width, writingCanvas.height);
+    setMessage("Writing canvas cleared.");
+});
+
+function distance(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function getFingerCount(landmarks) {
+    let count = 0;
+
+    // Index, middle, ring and little fingers.
+    const tips = [8, 12, 16, 20];
+    const bases = [6, 10, 14, 18];
+
+    for (let i = 0; i < tips.length; i++) {
+        if (landmarks[tips[i]].y < landmarks[bases[i]].y) {
+            count++;
+        }
+    }
+
+    // Thumb: approximate extension based on its distance from the palm.
+    if (distance(landmarks[4], landmarks[5]) >
+        distance(landmarks[3], landmarks[5]) * 1.15) {
+        count++;
+    }
+
+    return count;
+}
+
+function drawSkeleton(landmarks) {
+    const width = trackingCanvas.width;
+    const height = trackingCanvas.height;
+
+    // Connections
+    ctx.strokeStyle = "#50e3c2";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+
+    for (const [a, b] of CONNECTIONS) {
+        ctx.beginPath();
+        ctx.moveTo(landmarks[a].x * width, landmarks[a].y * height);
+        ctx.lineTo(landmarks[b].x * width, landmarks[b].y * height);
+        ctx.stroke();
+    }
+
+    // Landmarks
+    landmarks.forEach((point, index) => {
+        ctx.beginPath();
+        ctx.arc(
+            point.x * width,
+            point.y * height,
+            index === 8 || index === 4 ? 6 : 4,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            index === 8 ? "#facc15" :
+            index === 4 ? "#fb7185" :
+            "#60a5fa";
+
+        ctx.fill();
+    });
+}
+
+function drawTrail(point) {
+    motionTrail.push(point);
+
+    if (motionTrail.length > 30) {
+        motionTrail.shift();
+    }
+
+    if (motionTrail.length < 2) return;
+
+    ctx.beginPath();
+    ctx.moveTo(
+        motionTrail[0].x * trackingCanvas.width,
+        motionTrail[0].y * trackingCanvas.height
+    );
+
+    for (let i = 1; i < motionTrail.length; i++) {
+        ctx.lineTo(
+            motionTrail[i].x * trackingCanvas.width,
+            motionTrail[i].y * trackingCanvas.height
+        );
+    }
+
+    ctx.strokeStyle = "rgba(250,204,21,.8)";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.stroke();
+}
+
+function handleAirWriting(landmarks) {
+    const thumb = landmarks[4];
+    const index = landmarks[8];
+
+    // Pinch between thumb and index finger activates writing.
+    const pinchDistance = distance(thumb, index);
+    const pinching = pinchDistance < 0.055;
+
+    const point = {
+        x: index.x * writingCanvas.width,
+        y: index.y * writingCanvas.height
+    };
+
+    if (pinching) {
+        if (lastAirPoint) {
+            drawLine(
+                wctx,
+                lastAirPoint,
+                point,
+                penColor.value,
+                Number(penSize.value)
+            );
+        }
+
+        lastAirPoint = point;
+        airDrawing = true;
+    } else {
+        lastAirPoint = null;
+        airDrawing = false;
+    }
+
+    previousPinch = pinching;
+}
+
+function processResults(results) {
+    ctx.clearRect(0, 0, trackingCanvas.width, trackingCanvas.height);
+
+    const hands = results.landmarks || [];
+
+    handCountEl.textContent = hands.length;
+
+    if (hands.length === 0) {
+        setStatus(trackingStatus, "No hand detected", false);
+        fingerCountEl.textContent = "0";
+        speedEl.textContent = "0";
+        previousPalm = null;
+        motionTrail.length = 0;
+        lastAirPoint = null;
+        airDrawing = false;
+        return;
+    }
+
+    setStatus(trackingStatus, "Tracking Active", true);
+
+    hands.forEach((landmarks, index) => {
+        drawSkeleton(landmarks);
+
+        const palm = {
+            x: (landmarks[0].x + landmarks[5].x + landmarks[9].x +
+                landmarks[13].x + landmarks[17].x) / 5,
+            y: (landmarks[0].y + landmarks[5].y + landmarks[9].y +
+                landmarks[13].y + landmarks[17].y) / 5
+        };
+
+        if (index === 0) {
+            if (previousPalm) {
+                movementSpeed = distance(palm, previousPalm) *
+                    trackingCanvas.width;
+
+                drawTrail(palm);
+            }
+
+            previousPalm = palm;
+
+            speedEl.textContent = movementSpeed.toFixed(1);
+            fingerCountEl.textContent = getFingerCount(landmarks);
+
+            // Air writing uses the first detected hand.
+            handleAirWriting(landmarks);
+        }
+    });
+}
+
+async function createHandTracker() {
+    const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+
+    const modelURL =
+        "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+
+    try {
+        return await HandLandmarker.createFromOptions(vision, {
+            baseOptions: {
+                modelAssetPath: modelURL,
+                delegate: "GPU"
+            },
+            runningMode: "VIDEO",
+            numHands: 2,
+            minHandDetectionConfidence: 0.5,
+            minHandPresenceConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+    } catch (gpuError) {
+        console.warn("GPU unavailable. Trying CPU.", gpuError);
+
+        return await HandLandmarker.createFromOptions(vision, {
+            baseOptions: {
+                modelAssetPath: modelURL,
+                delegate: "CPU"
+            },
+            runningMode: "VIDEO",
+            numHands: 2,
+            minHandDetectionConfidence: 0.5,
+            minHandPresenceConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+    }
+}
+
+async function startCamera() {
+    if (running) return;
+
+    if (!navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia) {
+        setMessage("Camera API unavailable. Open this page on localhost or HTTPS.");
+        return;
+    }
+
+    startBtn.disabled = true;
+    setMessage("Requesting camera permission...");
+
+    try {
+        // Start the camera before downloading the tracking model.
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "user",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        running = true;
+
+        setStatus(cameraStatus, "Camera Online", true);
+        cameraMessage.classList.add("hidden");
+        stopBtn.disabled = false;
+
+        resizeCanvases();
+        setMessage("Camera started. Loading hand tracking model...");
+
+        if (!handLandmarker) {
+            handLandmarker = await createHandTracker();
+        }
+
+        if (!running) return;
+
+        setMessage("Ready! Show your hand to the camera.");
+        lastVideoTime = -1;
+
+        detectLoop();
+
+    } catch (error) {
+        console.error(error);
+
+        stopCamera();
+
+        if (error.name === "NotAllowedError") {
+            setMessage("Camera permission denied. Allow camera access in your browser settings.");
+        } else if (error.name === "NotFoundError") {
+            setMessage("No camera found. Connect a webcam and try again.");
+        } else if (error.name === "NotReadableError") {
+            setMessage("Camera is being used by another application. Close it and retry.");
+        } else {
+            setMessage("Error: " + error.message);
+        }
+    } finally {
+        startBtn.disabled = false;
+    }
+}
+
+function detectLoop() {
+    if (!running) return;
+
+    animationId = requestAnimationFrame(detectLoop);
+
+    if (video.readyState < 2 || !handLandmarker) return;
+
+    if (video.currentTime === lastVideoTime) return;
+
+    lastVideoTime = video.currentTime;
+
+    const now = performance.now();
+    const elapsed = now - lastFrameTime;
+
+    if (elapsed > 0) {
+        fps = 1000 / elapsed;
+    }
+
+    lastFrameTime = now;
+    fpsEl.textContent = Math.round(fps);
+
+    try {
+        const results = handLandmarker.detectForVideo(video, now);
+        processResults(results);
+    } catch (error) {
+        console.error("Tracking error:", error);
+    }
+}
+
+function stopCamera() {
+    running = false;
+
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+
+    video.srcObject = null;
+
+    ctx.clearRect(0, 0, trackingCanvas.width, trackingCanvas.height);
+
+    setStatus(cameraStatus, "Camera Offline", false);
+    setStatus(trackingStatus, "Waiting", false);
+
+    handCountEl.textContent = "0";
+    fingerCountEl.textContent = "0";
+    speedEl.textContent = "0";
+    fpsEl.textContent = "0";
+
+    previousPalm = null;
+    motionTrail.length = 0;
+    lastAirPoint = null;
+    airDrawing = false;
+
+    cameraMessage.classList.remove("hidden");
+    cameraMessage.textContent = "Camera stopped. Click Start Camera to begin again.";
+
+    stopBtn.disabled = true;
+    startBtn.disabled = false;
+
+    setMessage("Camera stopped.");
+}
+
+startBtn.addEventListener("click", startCamera);
+stopBtn.addEventListener("click", stopCamera);
+
+window.addEventListener("beforeunload", () => {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+
+</body>
+</html>
